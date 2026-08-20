@@ -60,7 +60,7 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="hg-scrollbar max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-bg-elevated shadow-xl"
+        className="hg-scrollbar max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-bg-elevated shadow-xl fixed top-[50%]"
       >
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-bg-elevated px-5 py-4">
           <div className="flex items-center gap-2">
