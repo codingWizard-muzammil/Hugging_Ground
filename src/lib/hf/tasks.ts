@@ -322,3 +322,11 @@ export function taskForPipelineTag(pipelineTag: string | null): TaskDef | null {
   if (!pipelineTag) return null;
   return TASKS[pipelineTag] ?? null;
 }
+
+export function pipelineTagLabel(pipelineTag: string | null): string {
+  if (!pipelineTag) return "Unknown task";
+  if (CHAT_PIPELINE_TAGS.has(pipelineTag)) {
+    return pipelineTag === "image-text-to-text" ? "Vision chat" : "Chat";
+  }
+  return TASKS[pipelineTag]?.label ?? pipelineTag.replace(/-/g, " ");
+}
