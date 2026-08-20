@@ -36,6 +36,7 @@ export type TaskResult =
 
 export type InputKind =
   | "prompt"
+  | "prompt-with-image"
   | "text"
   | "text-labels"
   | "text-context"
@@ -47,6 +48,7 @@ export type InputKind =
 
 export type TaskInput =
   | { kind: "prompt"; text: string }
+  | { kind: "prompt-with-image"; text: string; image?: Blob }
   | { kind: "text"; text: string }
   | { kind: "text-labels"; text: string; labels: string[] }
   | { kind: "text-context"; question: string; context: string }

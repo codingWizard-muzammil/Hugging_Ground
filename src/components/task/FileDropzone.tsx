@@ -8,10 +8,12 @@ export function FileDropzone({
   kind,
   file,
   onChange,
+  optional,
 }: {
   kind: "image" | "audio";
   file: File | null;
   onChange: (file: File | null) => void;
+  optional?: boolean;
 }) {
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -67,7 +69,9 @@ export function FileDropzone({
         {kind === "image" ? <IconImage width={17} height={17} /> : <IconAudio width={17} height={17} />}
       </div>
       <p className="text-xs text-fg-muted">
-        Drop a{kind === "audio" ? "n" : ""} {kind} file here, or click to browse
+        {optional
+          ? "Drop a reference image here to guide or edit the result (optional), or click to browse"
+          : `Drop a${kind === "audio" ? "n" : ""} ${kind} file here, or click to browse`}
       </p>
       <input
         ref={inputRef}

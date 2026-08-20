@@ -23,16 +23,31 @@ export const CHAT_PIPELINE_TAGS = new Set([
 export const TASKS: Record<string, TaskDef> = {
   "text-to-image": {
     label: "Text to image",
-    hint: "Describe the image you want to generate.",
-    inputKind: "prompt",
+    hint: "Describe the image you want to generate, or attach an image to use as a reference.",
+    inputKind: "prompt-with-image",
     outputKind: "image",
     placeholder: "A cinematic photo of a fox reading a book in a library, warm light",
     run: async (client, model, input) => {
-      if (input.kind !== "prompt") throw new Error("bad input");
-      const blob = await client.textToImage(
-        { model, inputs: input.text },
-        { outputType: "blob" }
-      );
+      if (input.kind !== "prompt-with-image") throw new Error("bad input");
+      const blob = input.image
+        ? await client.imageTextToImage({ model, inputs: input.image, parameters: { prompt: input.text } })
+        : await client.textToImage({ model, inputs: input.text }, { outputType: "blob" });
+      return { kind: "image", url: blobUrl(blob) };
+    },
+  },
+  "image-text-to-image": {
+    label: "Image editing",
+    hint: "Upload an image and describe the edit you want.",
+    inputKind: "prompt-with-image",
+    outputKind: "image",
+    placeholder: "Turn the background into a snowy mountain at sunset",
+    run: async (client, model, input) => {
+      if (input.kind !== "prompt-with-image") throw new Error("bad input");
+      const blob = await client.imageTextToImage({
+        model,
+        inputs: input.image,
+        parameters: { prompt: input.text },
+      });
       return { kind: "image", url: blobUrl(blob) };
     },
   },

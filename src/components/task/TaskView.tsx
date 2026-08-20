@@ -33,6 +33,8 @@ export function TaskView({ modelId, task }: { modelId: string; task: TaskDef }) 
       case "prompt":
       case "text":
         return text.trim() ? { kind: task.inputKind, text } : null;
+      case "prompt-with-image":
+        return text.trim() ? { kind: "prompt-with-image", text, image: image ?? undefined } : null;
       case "text-labels": {
         const labels = splitLabels(labelsText);
         return text.trim() && labels.length ? { kind: "text-labels", text, labels } : null;
@@ -74,11 +76,15 @@ export function TaskView({ modelId, task }: { modelId: string; task: TaskDef }) 
     }
   }
 
-  const needsImage = ["image", "image-labels", "image-question", "image-prompt"].includes(task.inputKind);
+  const needsImage = ["image", "image-labels", "image-question", "image-prompt", "prompt-with-image"].includes(
+    task.inputKind
+  );
+  const needsOptionalImage = task.inputKind === "prompt-with-image";
   const needsAudio = task.inputKind === "audio";
   const needsLabels = ["text-labels", "image-labels"].includes(task.inputKind);
   const needsPrimaryText =
     task.inputKind === "prompt" ||
+    task.inputKind === "prompt-with-image" ||
     task.inputKind === "text" ||
     task.inputKind === "image-question" ||
     task.inputKind === "image-prompt" ||
@@ -94,7 +100,9 @@ export function TaskView({ modelId, task }: { modelId: string; task: TaskDef }) 
         </div>
 
         <div className="flex flex-col gap-4 rounded-2xl border border-border bg-bg-elevated p-4">
-          {needsImage && <FileDropzone kind="image" file={image} onChange={setImage} />}
+          {needsImage && (
+            <FileDropzone kind="image" file={image} onChange={setImage} optional={needsOptionalImage} />
+          )}
           {needsAudio && <FileDropzone kind="audio" file={audio} onChange={setAudio} />}
 
           {task.inputKind === "text-context" && (
@@ -117,7 +125,7 @@ export function TaskView({ modelId, task }: { modelId: string; task: TaskDef }) 
                   ? "Question"
                   : task.inputKind === "image-question"
                     ? "Question"
-                    : task.inputKind === "image-prompt"
+                    : task.inputKind === "image-prompt" || task.inputKind === "prompt-with-image"
                       ? "Prompt"
                       : task.inputKind === "text-labels"
                         ? "Text"

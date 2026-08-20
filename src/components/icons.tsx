@@ -227,6 +227,14 @@ export function IconWand(props: IconProps) {
   );
 }
 
+export function IconActivity(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M3 12H7L9.5 5L14.5 19L17 12H21" />
+    </svg>
+  );
+}
+
 export function IconEyeOff(props: IconProps) {
   return (
     <svg {...base(props)}>
