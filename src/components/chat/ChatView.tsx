@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Composer } from "@/components/chat/Composer";
 import { MessageBubble } from "@/components/chat/MessageBubble";
-import { IconSparkles } from "@/components/icons";
+import { IconPlus, IconSparkles } from "@/components/icons";
 import { useInferenceClient } from "@/lib/hf/client";
 import { fileToChatAttachment, type UiAttachment } from "@/lib/attachments";
 import { streamChatCompletion, type ChatMessage } from "@/lib/hf/chat";
@@ -37,6 +37,7 @@ export function ChatView({
   const setAssistantError = useChatStore((state) => state.setAssistantError);
   const finishAssistant = useChatStore((state) => state.finishAssistant);
   const setStreaming = useChatStore((state) => state.setStreaming);
+  const clearChat = useChatStore((state) => state.clearChat);
   const abortRef = useRef<AbortController | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -101,8 +102,24 @@ export function ChatView({
     sendMutation.mutate({ text, attachments });
   }
 
+  function newChat() {
+    abortRef.current?.abort();
+    clearChat(modelId);
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      {messages.length > 0 && (
+        <div className="flex justify-end border-b border-border px-4 py-2 sm:px-6">
+          <button
+            onClick={newChat}
+            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-fg-muted transition-colors hover:bg-bg-inset hover:text-fg"
+          >
+            <IconPlus width={14} height={14} />
+            New chat
+          </button>
+        </div>
+      )}
       <div className="hg-scrollbar flex-1 overflow-y-auto px-4 py-6 sm:px-6">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
           {messages.length === 0 ? (
@@ -123,6 +140,7 @@ export function ChatView({
           <Composer
             disabled={!client}
             streaming={streaming}
+            allowImages={isVisionModel}
             onSend={send}
             onStop={() => abortRef.current?.abort()}
           />

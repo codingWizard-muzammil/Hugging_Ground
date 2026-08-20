@@ -3,28 +3,35 @@
 import { useRef, useState } from "react";
 import { AttachmentChip } from "@/components/chat/AttachmentChip";
 import { IconPaperclip, IconSend } from "@/components/icons";
-import { newAttachmentId, type UiAttachment } from "@/lib/attachments";
+import { isImageFile, newAttachmentId, type UiAttachment } from "@/lib/attachments";
 import { cn } from "@/lib/utils";
 
 export function Composer({
   disabled,
   streaming,
+  allowImages,
   onSend,
   onStop,
 }: {
   disabled: boolean;
   streaming: boolean;
+  allowImages: boolean;
   onSend: (text: string, attachments: UiAttachment[]) => void;
   onStop: () => void;
 }) {
   const [text, setText] = useState("");
   const [attachments, setAttachments] = useState<UiAttachment[]>([]);
   const [dragOver, setDragOver] = useState(false);
+  const [imageNotice, setImageNotice] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   function addFiles(files: FileList | File[]) {
-    const next = Array.from(files).map((file) => ({ id: newAttachmentId(), file }));
+    const all = Array.from(files);
+    const accepted = allowImages ? all : all.filter((f) => !isImageFile(f));
+    setImageNotice(!allowImages && accepted.length < all.length);
+    if (accepted.length === 0) return;
+    const next = accepted.map((file) => ({ id: newAttachmentId(), file }));
     setAttachments((prev) => [...prev, ...next]);
   }
 
@@ -77,12 +84,18 @@ export function Composer({
         </div>
       )}
 
+      {imageNotice && (
+        <p className="mb-2 px-1 text-[11px] text-amber-600 dark:text-amber-400">
+          This model doesn&apos;t support image inputs — images were not attached.
+        </p>
+      )}
+
       <div className="flex items-end gap-2">
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled}
-          title="Attach any file"
+          title={allowImages ? "Attach any file" : "Attach a file (this model doesn't support images)"}
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-fg-muted transition-colors hover:bg-bg-inset hover:text-fg disabled:opacity-40"
         >
           <IconPaperclip />

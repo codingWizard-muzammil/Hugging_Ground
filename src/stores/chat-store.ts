@@ -12,6 +12,7 @@ interface ChatState {
   setAssistantError: (modelId: string, assistantId: string, error: string) => void;
   finishAssistant: (modelId: string, assistantId: string) => void;
   setStreaming: (modelId: string, streaming: boolean) => void;
+  clearChat: (modelId: string) => void;
 }
 
 function mapMessage(
@@ -69,4 +70,10 @@ export const useChatStore = create<ChatState>((set) => ({
 
   setStreaming: (modelId, streaming) =>
     set((state) => ({ streamingByModel: { ...state.streamingByModel, [modelId]: streaming } })),
+
+  clearChat: (modelId) =>
+    set((state) => ({
+      messagesByModel: { ...state.messagesByModel, [modelId]: [] },
+      streamingByModel: { ...state.streamingByModel, [modelId]: false },
+    })),
 }));
