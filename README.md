@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Hugging Ground
 
-## Getting Started
+A playground for [Hugging Face](https://huggingface.co) models that runs
+entirely in your browser. Paste your own HF API key, search or pick any
+model on the Hub, and start playing — no account, no signup, nothing
+stored anywhere but your own browser's local storage.
 
-First, run the development server:
+## Features
+
+- **Bring your own key, nothing else.** No auth flow, no backend — your
+  Hugging Face token is saved to `localStorage` and sent straight to
+  Hugging Face. It never touches a server of ours.
+- **Any model, auto-detected.** Search the whole Hub or paste an exact
+  model id. Hugging Ground reads the model's task from its Hub metadata
+  and opens the right interface for it automatically.
+- **Streaming chat.** Conversational and vision models get a full chat UI
+  with token-by-token streaming, image attachments, and markdown
+  rendering.
+- **Every other task, too.** Text-to-image, image-to-image, text-to-speech,
+  speech-to-text, audio classification, object detection, image
+  segmentation, captioning, summarization, translation, question
+  answering, zero-shot classification, named entity recognition, sentence
+  similarity, and more — each with a matching input form and result view
+  (label bars, bounding-box overlays, mask galleries, audio/image
+  players).
+- **Drop almost anything.** Drag and drop or paste images, audio, or text
+  files onto the composer or a task's dropzone.
+
+## Getting started
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000), paste a Hugging Face
+API key (create one for free at
+[huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)),
+and pick a model.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## How it works
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Every request goes directly from your browser to Hugging Face's
+[Inference Providers](https://huggingface.co/docs/inference-providers)
+API via the official [`@huggingface/inference`](https://www.npmjs.com/package/@huggingface/inference)
+client. There's no API route or server in between — this app is a static
+Next.js frontend, and your API key is the only thing that authenticates
+your requests.
 
-## Learn More
+## Tech stack
 
-To learn more about Next.js, take a look at the following resources:
+- [Next.js](https://nextjs.org) (App Router) + React + TypeScript
+- Tailwind CSS v4
+- [`@huggingface/inference`](https://www.npmjs.com/package/@huggingface/inference)
+  for all model calls
+- [`react-markdown`](https://www.npmjs.com/package/react-markdown) for
+  chat responses
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+src/
+  app/                 Next.js routes, layout, generated icons
+  components/          UI — chat, task forms, model picker, header
+  context/             API key context (localStorage-backed)
+  lib/hf/              Task dispatch table, chat streaming, Hub search
+  lib/                 Shared client-side storage/utility helpers
+```
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See `CLAUDE.md` for a deeper architecture note if you're extending it.
