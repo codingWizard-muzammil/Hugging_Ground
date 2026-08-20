@@ -7,6 +7,7 @@ import { IconAlertTriangle, IconLoader, IconSparkles } from "@/components/icons"
 import { useApiKey } from "@/context/api-key-context";
 import type { TaskDef } from "@/lib/hf/tasks";
 import type { TaskInput, TaskResult } from "@/lib/hf/types";
+import { recordRequest } from "@/lib/usage-store";
 import { cn } from "@/lib/utils";
 
 function splitLabels(raw: string): string[] {
@@ -17,7 +18,7 @@ function splitLabels(raw: string): string[] {
 }
 
 export function TaskView({ modelId, task }: { modelId: string; task: TaskDef }) {
-  const { client } = useApiKey();
+  const { client,apiKey } = useApiKey();
   const [text, setText] = useState("");
   const [text2, setText2] = useState("");
   const [labelsText, setLabelsText] = useState("");
@@ -63,6 +64,7 @@ export function TaskView({ modelId, task }: { modelId: string; task: TaskDef }) 
     setError(null);
     setResult(null);
     try {
+      recordRequest(apiKey);
       const out = await task.run(client, modelId, input);
       setResult(out);
     } catch (err) {

@@ -7,6 +7,7 @@ import { IconSparkles } from "@/components/icons";
 import { useApiKey } from "@/context/api-key-context";
 import { fileToChatAttachment, type UiAttachment } from "@/lib/attachments";
 import { streamChatCompletion, type ChatMessage } from "@/lib/hf/chat";
+import { recordRequest } from "@/lib/usage-store";
 import { uid } from "@/lib/utils";
 
 const SUGGESTIONS = [
@@ -16,8 +17,14 @@ const SUGGESTIONS = [
   "Summarize the plot of a sci-fi movie in 3 sentences",
 ];
 
-export function ChatView({ modelId, isVisionModel }: { modelId: string; isVisionModel: boolean }) {
-  const { client } = useApiKey();
+export function ChatView({
+  modelId,
+  isVisionModel,
+}: {
+  modelId: string;
+  isVisionModel: boolean;
+}) {
+  const { client, apiKey } = useApiKey();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [streaming, setStreaming] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
@@ -34,7 +41,7 @@ export function ChatView({ modelId, isVisionModel }: { modelId: string; isVision
   async function send(text: string, attachments: UiAttachment[]) {
     if (!client) return;
     const chatAttachments = await Promise.all(
-      attachments.map((a) => fileToChatAttachment(a.file))
+      attachments.map((a) => fileToChatAttachment(a.file)),
     );
     const userMsg: ChatMessage = {
       id: uid("msg"),
@@ -44,19 +51,25 @@ export function ChatView({ modelId, isVisionModel }: { modelId: string; isVision
     };
     const assistantId = uid("msg");
     const history = [...messages, userMsg];
-    setMessages([...history, { id: assistantId, role: "assistant", text: "", pending: true }]);
+    setMessages([
+      ...history,
+      { id: assistantId, role: "assistant", text: "", pending: true },
+    ]);
 
     const controller = new AbortController();
     abortRef.current = controller;
     setStreaming(true);
     let acc = "";
     try {
+      recordRequest(apiKey);
       for await (const delta of streamChatCompletion(client, modelId, history, {
         signal: controller.signal,
       })) {
         acc += delta;
         setMessages((prev) =>
-          prev.map((m) => (m.id === assistantId ? { ...m, text: acc, pending: false } : m))
+          prev.map((m) =>
+            m.id === assistantId ? { ...m, text: acc, pending: false } : m,
+          ),
         );
       }
     } catch (err) {
@@ -65,13 +78,20 @@ export function ChatView({ modelId, isVisionModel }: { modelId: string; isVision
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantId
-              ? { ...m, pending: false, error: err instanceof Error ? err.message : "Something went wrong" }
-              : m
-          )
+              ? {
+                  ...m,
+                  pending: false,
+                  error:
+                    err instanceof Error ? err.message : "Something went wrong",
+                }
+              : m,
+          ),
         );
       }
     } finally {
-      setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, pending: false } : m)));
+      setMessages((prev) =>
+        prev.map((m) => (m.id === assistantId ? { ...m, pending: false } : m)),
+      );
       setStreaming(false);
       abortRef.current = null;
     }
@@ -82,7 +102,11 @@ export function ChatView({ modelId, isVisionModel }: { modelId: string; isVision
       <div className="hg-scrollbar flex-1 overflow-y-auto px-4 py-6 sm:px-6">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
           {messages.length === 0 ? (
-            <EmptyState modelId={modelId} isVisionModel={isVisionModel} onPick={(t) => send(t, [])} />
+            <EmptyState
+              modelId={modelId}
+              isVisionModel={isVisionModel}
+              onPick={(t) => send(t, [])}
+            />
           ) : (
             messages.map((m) => <MessageBubble key={m.id} message={m} />)
           )}
@@ -127,7 +151,9 @@ function EmptyState({
         <h2 className="text-base font-semibold">Start chatting with</h2>
         <p className="mt-1 font-mono text-sm text-fg-muted">{modelId}</p>
         {isVisionModel && (
-          <p className="mt-1 text-xs text-fg-subtle">Supports image attachments</p>
+          <p className="mt-1 text-xs text-fg-subtle">
+            Supports image attachments
+          </p>
         )}
       </div>
       <div className="grid w-full max-w-lg grid-cols-1 gap-2 sm:grid-cols-2">

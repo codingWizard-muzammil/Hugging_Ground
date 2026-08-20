@@ -1,4 +1,5 @@
 import { clearApiKey, loadApiKey, saveApiKey } from "@/lib/storage";
+import { resetUsage } from "@/lib/usage-store";
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
@@ -21,7 +22,8 @@ export function setStoredApiKey(key: string) {
   listeners.forEach((listener) => listener());
 }
 
-export function clearStoredApiKey() {
+export function clearStoredApiKey(apiKey: any) {
   clearApiKey();
+  resetUsage(apiKey);
   listeners.forEach((listener) => listener());
 }

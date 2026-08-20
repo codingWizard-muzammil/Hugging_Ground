@@ -14,7 +14,7 @@ interface ApiKeyContextValue {
   apiKey: string | null;
   client: InferenceClient | null;
   setApiKey: (key: string) => void;
-  signOut: () => void;
+  signOut: (apiKey: string | null) => void;
 }
 
 const ApiKeyContext = createContext<ApiKeyContextValue | null>(null);
@@ -25,8 +25,13 @@ export function ApiKeyProvider({ children }: { children: React.ReactNode }) {
   const client = useMemo(() => (apiKey ? new InferenceClient(apiKey) : null), [apiKey]);
 
   const value = useMemo(
-    () => ({ apiKey, client, setApiKey: setStoredApiKey, signOut: clearStoredApiKey }),
-    [apiKey, client]
+    () => ({
+      apiKey,
+      client,
+      setApiKey: setStoredApiKey,
+      signOut: (apiKey: any) => clearStoredApiKey(apiKey),
+    }),
+    [apiKey, client],
   );
 
   return <ApiKeyContext.Provider value={value}>{children}</ApiKeyContext.Provider>;
