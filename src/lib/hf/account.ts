@@ -1,5 +1,7 @@
 export interface HfAccountInfo {
   name: string;
+  fullname: string;
+  avatarUrl: string | null;
   isPro: boolean;
   type: "user" | "org";
   periodEnd: number | null;
@@ -8,6 +10,7 @@ export interface HfAccountInfo {
 interface RawWhoAmI {
   name?: string;
   fullname?: string;
+  avatarUrl?: string;
   isPro?: boolean;
   type?: string;
   periodEnd?: number | null;
@@ -26,8 +29,15 @@ export async function fetchAccountInfo(apiKey: string, signal?: AbortSignal): Pr
     );
   }
   const data = (await res.json()) as RawWhoAmI;
+  const avatarUrl = data.avatarUrl
+    ? data.avatarUrl.startsWith("http")
+      ? data.avatarUrl
+      : `https://huggingface.co${data.avatarUrl}`
+    : null;
   return {
-    name: data.name ?? data.fullname ?? "",
+    name: data.name ?? "",
+    fullname: data.fullname ?? data.name ?? "",
+    avatarUrl,
     isPro: Boolean(data.isPro),
     type: data.type === "org" ? "org" : "user",
     periodEnd: typeof data.periodEnd === "number" ? data.periodEnd : null,

@@ -26,32 +26,64 @@ function maskKey(key: string) {
   return `${key.slice(0, 6)}••••${key.slice(-3)}`;
 }
 
-function UsageSection({ apiKey }: { apiKey: string }) {
+function ProfileSection({
+  account,
+  loading,
+  accountError,
+}: {
+  account: HfAccountInfo | null;
+  loading: boolean;
+  accountError: boolean;
+}) {
+  if (loading || accountError || !account) return null;
+
+  return (
+    <a
+      href={`https://huggingface.co/${account.name}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mb-2 flex items-center gap-2.5 rounded-lg border border-border bg-bg p-2.5 hover:bg-bg-inset"
+    >
+      {account.avatarUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={account.avatarUrl}
+          alt=""
+          width={32}
+          height={32}
+          className="h-8 w-8 shrink-0 rounded-full"
+        />
+      ) : (
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-bg-inset text-xs font-semibold text-fg-muted">
+          {account.name.slice(0, 1).toUpperCase()}
+        </div>
+      )}
+      <div className="min-w-0">
+        <p className="truncate text-xs font-semibold text-fg">
+          {account.fullname || account.name}
+        </p>
+        <p className="truncate text-[11px] text-fg-muted">@{account.name}</p>
+      </div>
+    </a>
+  );
+}
+
+function UsageSection({
+  apiKey,
+  account,
+  loading,
+  accountError,
+}: {
+  apiKey: string;
+  account: HfAccountInfo | null;
+  loading: boolean;
+  accountError: boolean;
+}) {
   const requestCount = useSyncExternalStore(
     subscribeUsage,
     () => getUsageSnapshot(apiKey),
     getUsageServerSnapshot,
   );
-  const [account, setAccount] = useState<HfAccountInfo | null>(null);
-  const [accountError, setAccountError] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchAccountInfo(apiKey)
-      .then((info) => {
-        if (!cancelled) setAccount(info);
-      })
-      .catch(() => {
-        if (!cancelled) setAccountError(true);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [apiKey]);
 
   return (
     <div className="mb-2 rounded-lg border border-border bg-bg p-2.5">
@@ -89,11 +121,21 @@ function UsageSection({ apiKey }: { apiKey: string }) {
 }
 
 function KeyMenu() {
-  const { apiKey, setApiKey, signOut } = useApiKey();
+  const { apiKey } = useApiKey();
+  if (!apiKey) return null;
+  return <KeyMenuPanel key={apiKey} apiKey={apiKey} />;
+}
+
+function KeyMenuPanel({ apiKey }: { apiKey: string }) {
+  const { setApiKey, signOut } = useApiKey();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const ref = useRef<HTMLDivElement>(null);
+
+  const [account, setAccount] = useState<HfAccountInfo | null>(null);
+  const [accountError, setAccountError] = useState(false);
+  const [accountLoading, setAccountLoading] = useState(true);
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -106,7 +148,22 @@ function KeyMenu() {
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
-  if (!apiKey) return null;
+  useEffect(() => {
+    let cancelled = false;
+    fetchAccountInfo(apiKey)
+      .then((info) => {
+        if (!cancelled) setAccount(info);
+      })
+      .catch(() => {
+        if (!cancelled) setAccountError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setAccountLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [apiKey]);
 
   return (
     <div className="relative" ref={ref}>
@@ -114,14 +171,37 @@ function KeyMenu() {
         onClick={() => setOpen((v) => !v)}
         className="flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-xs font-medium text-fg-muted transition-colors hover:bg-bg-inset hover:text-fg"
       >
-        <IconKey width={14} height={14} />
-        <span className="font-mono">{maskKey(apiKey)}</span>
+        {account?.avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={account.avatarUrl}
+            alt=""
+            width={16}
+            height={16}
+            className="h-4 w-4 rounded-full"
+          />
+        ) : (
+          <IconKey width={14} height={14} />
+        )}
+        <span className="font-mono">
+          {account?.name ? account.name : maskKey(apiKey)}
+        </span>
         <IconChevronDown width={14} height={14} />
       </button>
 
       {open && (
         <div className="absolute right-0 z-20 mt-2 w-72 rounded-xl border border-border bg-bg-elevated p-3 shadow-lg hg-animate-in">
-          <UsageSection key={apiKey} apiKey={apiKey} />
+          <ProfileSection
+            account={account}
+            loading={accountLoading}
+            accountError={accountError}
+          />
+          <UsageSection
+            apiKey={apiKey}
+            account={account}
+            loading={accountLoading}
+            accountError={accountError}
+          />
           {editing ? (
             <form
               onSubmit={(e) => {
@@ -157,7 +237,10 @@ function KeyMenu() {
                 }}
                 className="rounded-md px-2 py-1.5 text-left text-xs font-medium text-fg hover:bg-bg-inset"
               >
-                Change key
+                Change key from {" "}
+                <span className="text-blue-400">
+                {maskKey(apiKey)}
+                </span>
               </button>
               <button
                 onClick={() => signOut(apiKey)}
