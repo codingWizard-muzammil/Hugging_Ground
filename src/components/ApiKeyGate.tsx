@@ -10,11 +10,10 @@ const TOKEN_URL =
   "https://huggingface.co/settings/tokens/new?ownUserPermissions=inference.serverless.write&tokenType=fineGrained";
 
 export function ApiKeyGate({ children }: { children: React.ReactNode }) {
-  const { apiKey, hydrated, setApiKey } = useApiKey();
+  const { apiKey, setApiKey } = useApiKey();
   const [draft, setDraft] = useState("");
   const [reveal, setReveal] = useState(false);
 
-  if (!hydrated) return null;
   if (apiKey) return <>{children}</>;
 
   function submit(e: React.FormEvent) {
@@ -25,7 +24,7 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
   const looksValid = draft.trim().length === 0 || draft.trim().startsWith("hf_");
 
   return (
-    <div className="flex min-h-screen flex-1 items-center justify-center px-4 py-12">
+    <div className="hg-scrollbar flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-4 py-12">
       <div className="w-full max-w-md hg-animate-in">
         <div className="mb-8 flex flex-col items-center gap-4 text-center">
           <Logo size={44} showWordmark={false} />

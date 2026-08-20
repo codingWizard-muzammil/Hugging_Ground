@@ -27,9 +27,13 @@ export function ModelPicker({
   const ref = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (open) setRecent(loadRecentModels());
-  }, [open]);
+  function toggleOpen() {
+    setOpen((v) => {
+      const next = !v;
+      if (next) setRecent(loadRecentModels());
+      return next;
+    });
+  }
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -46,9 +50,9 @@ export function ModelPicker({
   useEffect(() => {
     if (!open) return;
     const controller = new AbortController();
-    setLoading(true);
-    setError(null);
     const timer = setTimeout(async () => {
+      setLoading(true);
+      setError(null);
       try {
         const data = await searchModels(query, { limit: 25, signal: controller.signal });
         setResults(data);
@@ -88,8 +92,8 @@ export function ModelPicker({
   return (
     <div className="relative" ref={ref}>
       <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex h-10 w-full min-w-0 items-center gap-2 rounded-lg border border-border bg-bg-elevated px-3 text-sm hover:border-border-strong sm:w-auto sm:min-w-[280px]"
+        onClick={toggleOpen}
+        className="flex h-10 w-full min-w-0 items-center gap-2 rounded-lg border border-border bg-bg-elevated px-3 text-sm hover:border-border-strong sm:w-auto sm:min-w-70"
       >
         <span className="hg-gradient-ring h-2 w-2 shrink-0 rounded-full" />
         <span className="min-w-0 flex-1 truncate text-left font-medium">

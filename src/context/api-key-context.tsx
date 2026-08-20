@@ -1,19 +1,17 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { createContext, useContext, useMemo, useSyncExternalStore } from "react";
 import { InferenceClient } from "@huggingface/inference";
-import { clearApiKey, loadApiKey, saveApiKey } from "@/lib/storage";
+import {
+  clearStoredApiKey,
+  getApiKeyServerSnapshot,
+  getApiKeySnapshot,
+  setStoredApiKey,
+  subscribeApiKey,
+} from "@/lib/api-key-store";
 
 interface ApiKeyContextValue {
   apiKey: string | null;
-  hydrated: boolean;
   client: InferenceClient | null;
   setApiKey: (key: string) => void;
   signOut: () => void;
@@ -22,33 +20,13 @@ interface ApiKeyContextValue {
 const ApiKeyContext = createContext<ApiKeyContextValue | null>(null);
 
 export function ApiKeyProvider({ children }: { children: React.ReactNode }) {
-  const [apiKey, setApiKeyState] = useState<string | null>(null);
-  const [hydrated, setHydrated] = useState(false);
+  const apiKey = useSyncExternalStore(subscribeApiKey, getApiKeySnapshot, getApiKeyServerSnapshot);
 
-  useEffect(() => {
-    setApiKeyState(loadApiKey());
-    setHydrated(true);
-  }, []);
-
-  const setApiKey = useCallback((key: string) => {
-    const trimmed = key.trim();
-    saveApiKey(trimmed);
-    setApiKeyState(trimmed);
-  }, []);
-
-  const signOut = useCallback(() => {
-    clearApiKey();
-    setApiKeyState(null);
-  }, []);
-
-  const client = useMemo(
-    () => (apiKey ? new InferenceClient(apiKey) : null),
-    [apiKey]
-  );
+  const client = useMemo(() => (apiKey ? new InferenceClient(apiKey) : null), [apiKey]);
 
   const value = useMemo(
-    () => ({ apiKey, hydrated, client, setApiKey, signOut }),
-    [apiKey, hydrated, client, setApiKey, signOut]
+    () => ({ apiKey, client, setApiKey: setStoredApiKey, signOut: clearStoredApiKey }),
+    [apiKey, client]
   );
 
   return <ApiKeyContext.Provider value={value}>{children}</ApiKeyContext.Provider>;

@@ -37,7 +37,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <body className="min-h-full flex flex-col bg-bg text-fg">
+      <body className="h-dvh flex flex-col overflow-hidden bg-bg text-fg">
         <ApiKeyProvider>{children}</ApiKeyProvider>
       </body>
     </html>

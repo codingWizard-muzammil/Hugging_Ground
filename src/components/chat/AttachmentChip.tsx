@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { IconFile, IconX } from "@/components/icons";
 import { isImageFile } from "@/lib/attachments";
 import { formatBytes } from "@/lib/utils";
@@ -12,14 +12,7 @@ export function AttachmentChip({
   file: File;
   onRemove?: () => void;
 }) {
-  const [preview, setPreview] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!isImageFile(file)) return;
-    const url = URL.createObjectURL(file);
-    setPreview(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
+  const preview = useMemo(() => (isImageFile(file) ? URL.createObjectURL(file) : null), [file]);
 
   return (
     <div className="group relative flex items-center gap-2 rounded-lg border border-border bg-bg-inset py-1 pl-1 pr-2.5">

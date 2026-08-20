@@ -28,10 +28,8 @@ export function ChatView({ modelId, isVisionModel }: { modelId: string; isVision
   }, [messages]);
 
   useEffect(() => {
-    setMessages([]);
-    abortRef.current?.abort();
-    setStreaming(false);
-  }, [modelId]);
+    return () => abortRef.current?.abort();
+  }, []);
 
   async function send(text: string, attachments: UiAttachment[]) {
     if (!client) return;

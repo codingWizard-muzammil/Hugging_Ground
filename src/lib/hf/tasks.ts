@@ -29,7 +29,10 @@ export const TASKS: Record<string, TaskDef> = {
     placeholder: "A cinematic photo of a fox reading a book in a library, warm light",
     run: async (client, model, input) => {
       if (input.kind !== "prompt") throw new Error("bad input");
-      const blob = await client.textToImage({ model, inputs: input.text });
+      const blob = await client.textToImage(
+        { model, inputs: input.text },
+        { outputType: "blob" }
+      );
       return { kind: "image", url: blobUrl(blob) };
     },
   },
@@ -90,10 +93,10 @@ export const TASKS: Record<string, TaskDef> = {
     run: async (client, model, input) => {
       if (input.kind !== "audio") throw new Error("bad input");
       const out = await client.audioToAudio({ model, inputs: input.audio });
-      const first = Array.isArray(out) ? out[0] : out;
-      const blob = first?.blob instanceof Blob ? first.blob : undefined;
-      if (!blob) throw new Error("No audio returned by the model.");
-      return { kind: "audio", url: blobUrl(blob) };
+      const first = out[0];
+      if (!first) throw new Error("No audio returned by the model.");
+      const contentType = first["content-type"] || "audio/wav";
+      return { kind: "audio", url: `data:${contentType};base64,${first.blob}` };
     },
   },
   "image-classification": {
