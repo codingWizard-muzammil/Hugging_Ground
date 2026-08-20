@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ApiKeyProvider } from "@/context/api-key-context";
+import { Providers } from "./providers";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -21,8 +21,8 @@ export const metadata: Metadata = {
 
 const THEME_INIT_SCRIPT = `
 try {
-  var stored = localStorage.getItem("hg:theme");
-  var isDark = stored ? stored === "dark" : true;
+  var stored = JSON.parse(localStorage.getItem("hg:theme"));
+  var isDark = stored ? stored.state.theme === "dark" : true;
   document.documentElement.classList.toggle("dark", isDark);
 } catch (e) {}
 `;
@@ -38,7 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="h-dvh flex flex-col overflow-hidden bg-bg text-fg">
-        <ApiKeyProvider>{children}</ApiKeyProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
