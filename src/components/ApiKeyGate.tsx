@@ -3,14 +3,15 @@
 import { useState } from "react";
 import { Logo } from "@/components/Logo";
 import { IconAlertTriangle, IconExternalLink, IconEye, IconEyeOff, IconKey } from "@/components/icons";
-import { useApiKey } from "@/context/api-key-context";
+import { useApiKeyStore } from "@/stores/api-key-store";
 import { cn } from "@/lib/utils";
 
 const TOKEN_URL =
   "https://huggingface.co/settings/tokens/new?ownUserPermissions=inference.serverless.write&tokenType=fineGrained";
 
 export function ApiKeyGate({ children }: { children: React.ReactNode }) {
-  const { apiKey, setApiKey } = useApiKey();
+  const apiKey = useApiKeyStore((state) => state.apiKey);
+  const setApiKey = useApiKeyStore((state) => state.setApiKey);
   const [draft, setDraft] = useState("");
   const [reveal, setReveal] = useState(false);
 

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { HelpModal } from "@/components/HelpModal";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -12,13 +13,9 @@ import {
   IconKey,
   IconTrash,
 } from "@/components/icons";
-import { useApiKey } from "@/context/api-key-context";
+import { useApiKeyStore } from "@/stores/api-key-store";
 import { fetchAccountInfo, type HfAccountInfo } from "@/lib/hf/account";
-import {
-  getUsageServerSnapshot,
-  getUsageSnapshot,
-  subscribeUsage,
-} from "@/lib/usage-store";
+import { useUsageCount } from "@/stores/usage-store";
 import { formatCompactNumber } from "@/lib/utils";
 
 function maskKey(key: string) {
@@ -31,7 +28,7 @@ function ProfileSection({
   loading,
   accountError,
 }: {
-  account: HfAccountInfo | null;
+  account: HfAccountInfo | undefined;
   loading: boolean;
   accountError: boolean;
 }) {
@@ -75,15 +72,11 @@ function UsageSection({
   accountError,
 }: {
   apiKey: string;
-  account: HfAccountInfo | null;
+  account: HfAccountInfo | undefined;
   loading: boolean;
   accountError: boolean;
 }) {
-  const requestCount = useSyncExternalStore(
-    subscribeUsage,
-    () => getUsageSnapshot(apiKey),
-    getUsageServerSnapshot,
-  );
+  const requestCount = useUsageCount(apiKey);
 
   return (
     <div className="mb-2 rounded-lg border border-border bg-bg p-2.5">
@@ -121,21 +114,27 @@ function UsageSection({
 }
 
 function KeyMenu() {
-  const { apiKey } = useApiKey();
+  const apiKey = useApiKeyStore((state) => state.apiKey);
   if (!apiKey) return null;
   return <KeyMenuPanel key={apiKey} apiKey={apiKey} />;
 }
 
 function KeyMenuPanel({ apiKey }: { apiKey: string }) {
-  const { setApiKey, signOut } = useApiKey();
+  const setApiKey = useApiKeyStore((state) => state.setApiKey);
+  const signOut = useApiKeyStore((state) => state.signOut);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const ref = useRef<HTMLDivElement>(null);
 
-  const [account, setAccount] = useState<HfAccountInfo | null>(null);
-  const [accountError, setAccountError] = useState(false);
-  const [accountLoading, setAccountLoading] = useState(true);
+  const {
+    data: account,
+    isPending: accountLoading,
+    isError: accountError,
+  } = useQuery<HfAccountInfo>({
+    queryKey: ["hf-account", apiKey],
+    queryFn: ({ signal }) => fetchAccountInfo(apiKey, signal),
+  });
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -147,23 +146,6 @@ function KeyMenuPanel({ apiKey }: { apiKey: string }) {
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchAccountInfo(apiKey)
-      .then((info) => {
-        if (!cancelled) setAccount(info);
-      })
-      .catch(() => {
-        if (!cancelled) setAccountError(true);
-      })
-      .finally(() => {
-        if (!cancelled) setAccountLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [apiKey]);
 
   return (
     <div className="relative" ref={ref}>
@@ -243,7 +225,7 @@ function KeyMenuPanel({ apiKey }: { apiKey: string }) {
                 </span>
               </button>
               <button
-                onClick={() => signOut(apiKey)}
+                onClick={() => signOut()}
                 className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-xs font-medium text-danger hover:bg-bg-inset"
               >
                 <IconTrash width={13} height={13} />

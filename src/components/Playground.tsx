@@ -8,10 +8,13 @@ import { TaskView } from "@/components/task/TaskView";
 import { IconAlertTriangle, IconHelpCircle, IconSparkles } from "@/components/icons";
 import type { HubModelSummary } from "@/lib/hf/hub";
 import { CHAT_PIPELINE_TAGS, pipelineTagLabel, taskForPipelineTag } from "@/lib/hf/tasks";
-import { pushRecentModel } from "@/lib/storage";
+import { useSelectedModelStore } from "@/stores/model-store";
+import { useRecentModelsStore } from "@/stores/recent-models-store";
 
 export function Playground() {
-  const [model, setModel] = useState<HubModelSummary | null>(null);
+  const model = useSelectedModelStore((state) => state.model);
+  const setModel = useSelectedModelStore((state) => state.setModel);
+  const pushRecentModel = useRecentModelsStore((state) => state.pushRecentModel);
 
   function handleSelect(m: HubModelSummary) {
     setModel(m);

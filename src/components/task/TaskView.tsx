@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { FileDropzone } from "@/components/task/FileDropzone";
 import { OutputPanel } from "@/components/task/OutputPanel";
 import { IconAlertTriangle, IconLoader, IconSparkles } from "@/components/icons";
-import { useApiKey } from "@/context/api-key-context";
+import { useInferenceClient } from "@/lib/hf/client";
 import type { TaskDef } from "@/lib/hf/tasks";
-import type { TaskInput, TaskResult } from "@/lib/hf/types";
-import { recordRequest } from "@/lib/usage-store";
+import type { TaskInput } from "@/lib/hf/types";
+import { useApiKeyStore } from "@/stores/api-key-store";
+import { useUsageStore } from "@/stores/usage-store";
 import { cn } from "@/lib/utils";
 
 function splitLabels(raw: string): string[] {
@@ -18,15 +20,22 @@ function splitLabels(raw: string): string[] {
 }
 
 export function TaskView({ modelId, task }: { modelId: string; task: TaskDef }) {
-  const { client,apiKey } = useApiKey();
+  const client = useInferenceClient();
+  const apiKey = useApiKeyStore((state) => state.apiKey);
+  const recordRequest = useUsageStore((state) => state.recordRequest);
   const [text, setText] = useState("");
   const [text2, setText2] = useState("");
   const [labelsText, setLabelsText] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [audio, setAudio] = useState<File | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<TaskResult | null>(null);
+
+  const runMutation = useMutation({
+    mutationFn: async (input: TaskInput) => {
+      if (!client) throw new Error("No API client");
+      recordRequest(apiKey);
+      return task.run(client, modelId, input);
+    },
+  });
 
   function buildInput(): TaskInput | null {
     switch (task.inputKind) {
@@ -60,21 +69,18 @@ export function TaskView({ modelId, task }: { modelId: string; task: TaskDef }) 
 
   const input = buildInput();
 
-  async function run() {
+  function run() {
     if (!client || !input) return;
-    setLoading(true);
-    setError(null);
-    setResult(null);
-    try {
-      recordRequest(apiKey);
-      const out = await task.run(client, modelId, input);
-      setResult(out);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
-    } finally {
-      setLoading(false);
-    }
+    runMutation.mutate(input);
   }
+
+  const loading = runMutation.isPending;
+  const error = runMutation.error
+    ? runMutation.error instanceof Error
+      ? runMutation.error.message
+      : "Something went wrong"
+    : null;
+  const result = runMutation.data ?? null;
 
   const needsImage = ["image", "image-labels", "image-question", "image-prompt", "prompt-with-image"].includes(
     task.inputKind

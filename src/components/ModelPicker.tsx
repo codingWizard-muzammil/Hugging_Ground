@@ -1,15 +1,26 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   FEATURED_MODELS,
+  getModelInfo,
   searchModels,
   type HubModelSummary,
 } from "@/lib/hf/hub";
 import { pipelineTagLabel } from "@/lib/hf/tasks";
-import { loadRecentModels } from "@/lib/storage";
+import { useRecentModelsStore } from "@/stores/recent-models-store";
 import { cn, formatCompactNumber } from "@/lib/utils";
 import { IconChevronDown, IconLoader, IconSearch } from "@/components/icons";
+
+function useDebouncedValue<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
 
 export function ModelPicker({
   value,
@@ -20,19 +31,39 @@ export function ModelPicker({
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<HubModelSummary[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [recent, setRecent] = useState<string[]>([]);
+  const recent = useRecentModelsStore((state) => state.recentModels);
   const ref = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const debouncedQuery = useDebouncedValue(query, 280);
+
+  const {
+    data: results = [],
+    isLoading: loading,
+    error: searchError,
+  } = useQuery({
+    queryKey: ["hf-model-search", debouncedQuery],
+    queryFn: ({ signal }) => searchModels(debouncedQuery, { limit: 25, signal }),
+    enabled: open,
+  });
+
+  const pickByIdMutation = useMutation({
+    mutationFn: (id: string) => getModelInfo(id.trim()),
+    onSuccess: (info) => pick(info),
+  });
+
+  const error = searchError
+    ? searchError instanceof Error
+      ? searchError.message
+      : "Search failed"
+    : pickByIdMutation.error
+      ? pickByIdMutation.error instanceof Error
+        ? pickByIdMutation.error.message
+        : "Couldn't load that model"
+      : null;
+
   function toggleOpen() {
-    setOpen((v) => {
-      const next = !v;
-      if (next) setRecent(loadRecentModels());
-      return next;
-    });
+    setOpen((v) => !v);
   }
 
   useEffect(() => {
@@ -47,43 +78,14 @@ export function ModelPicker({
     if (open) setTimeout(() => inputRef.current?.focus(), 0);
   }, [open]);
 
-  useEffect(() => {
-    if (!open) return;
-    const controller = new AbortController();
-    const timer = setTimeout(async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await searchModels(query, { limit: 25, signal: controller.signal });
-        setResults(data);
-      } catch (err) {
-        if (!(err instanceof DOMException && err.name === "AbortError")) {
-          setError(err instanceof Error ? err.message : "Search failed");
-        }
-      } finally {
-        setLoading(false);
-      }
-    }, 280);
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [query, open]);
-
   function pick(model: HubModelSummary) {
     onSelect(model);
     setOpen(false);
     setQuery("");
   }
 
-  async function pickById(id: string) {
-    try {
-      const { getModelInfo } = await import("@/lib/hf/hub");
-      const info = await getModelInfo(id.trim());
-      pick(info);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't load that model");
-    }
+  function pickById(id: string) {
+    pickByIdMutation.mutate(id);
   }
 
   const showFeatured = query.trim().length === 0;

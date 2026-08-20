@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { Composer } from "@/components/chat/Composer";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { IconSparkles } from "@/components/icons";
-import { useApiKey } from "@/context/api-key-context";
+import { useInferenceClient } from "@/lib/hf/client";
 import { fileToChatAttachment, type UiAttachment } from "@/lib/attachments";
 import { streamChatCompletion, type ChatMessage } from "@/lib/hf/chat";
-import { recordRequest } from "@/lib/usage-store";
+import { useApiKeyStore } from "@/stores/api-key-store";
+import { EMPTY_MESSAGES, useChatStore } from "@/stores/chat-store";
+import { useUsageStore } from "@/stores/usage-store";
 import { uid } from "@/lib/utils";
 
 const SUGGESTIONS = [
@@ -24,9 +27,16 @@ export function ChatView({
   modelId: string;
   isVisionModel: boolean;
 }) {
-  const { client, apiKey } = useApiKey();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [streaming, setStreaming] = useState(false);
+  const client = useInferenceClient();
+  const apiKey = useApiKeyStore((state) => state.apiKey);
+  const recordRequest = useUsageStore((state) => state.recordRequest);
+  const messages = useChatStore((state) => state.messagesByModel[modelId] ?? EMPTY_MESSAGES);
+  const streaming = useChatStore((state) => state.streamingByModel[modelId] ?? false);
+  const startExchange = useChatStore((state) => state.startExchange);
+  const appendDelta = useChatStore((state) => state.appendDelta);
+  const setAssistantError = useChatStore((state) => state.setAssistantError);
+  const finishAssistant = useChatStore((state) => state.finishAssistant);
+  const setStreaming = useChatStore((state) => state.setStreaming);
   const abortRef = useRef<AbortController | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -38,63 +48,57 @@ export function ChatView({
     return () => abortRef.current?.abort();
   }, []);
 
-  async function send(text: string, attachments: UiAttachment[]) {
-    if (!client) return;
-    const chatAttachments = await Promise.all(
-      attachments.map((a) => fileToChatAttachment(a.file)),
-    );
-    const userMsg: ChatMessage = {
-      id: uid("msg"),
-      role: "user",
+  const sendMutation = useMutation({
+    mutationFn: async ({
       text,
-      attachments: chatAttachments,
-    };
-    const assistantId = uid("msg");
-    const history = [...messages, userMsg];
-    setMessages([
-      ...history,
-      { id: assistantId, role: "assistant", text: "", pending: true },
-    ]);
-
-    const controller = new AbortController();
-    abortRef.current = controller;
-    setStreaming(true);
-    let acc = "";
-    try {
-      recordRequest(apiKey);
-      for await (const delta of streamChatCompletion(client, modelId, history, {
-        signal: controller.signal,
-      })) {
-        acc += delta;
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId ? { ...m, text: acc, pending: false } : m,
-          ),
-        );
-      }
-    } catch (err) {
-      const aborted = err instanceof DOMException && err.name === "AbortError";
-      if (!aborted) {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId
-              ? {
-                  ...m,
-                  pending: false,
-                  error:
-                    err instanceof Error ? err.message : "Something went wrong",
-                }
-              : m,
-          ),
-        );
-      }
-    } finally {
-      setMessages((prev) =>
-        prev.map((m) => (m.id === assistantId ? { ...m, pending: false } : m)),
+      attachments,
+    }: {
+      text: string;
+      attachments: UiAttachment[];
+    }) => {
+      if (!client) return;
+      const chatAttachments = await Promise.all(
+        attachments.map((a) => fileToChatAttachment(a.file)),
       );
-      setStreaming(false);
-      abortRef.current = null;
-    }
+      const userMsg: ChatMessage = {
+        id: uid("msg"),
+        role: "user",
+        text,
+        attachments: chatAttachments,
+      };
+      const assistantId = uid("msg");
+      const history = [...messages, userMsg];
+      startExchange(modelId, userMsg, assistantId);
+
+      const controller = new AbortController();
+      abortRef.current = controller;
+      setStreaming(modelId, true);
+      try {
+        recordRequest(apiKey);
+        for await (const delta of streamChatCompletion(client, modelId, history, {
+          signal: controller.signal,
+        })) {
+          appendDelta(modelId, assistantId, delta);
+        }
+      } catch (err) {
+        const aborted = err instanceof DOMException && err.name === "AbortError";
+        if (!aborted) {
+          setAssistantError(
+            modelId,
+            assistantId,
+            err instanceof Error ? err.message : "Something went wrong",
+          );
+        }
+      } finally {
+        finishAssistant(modelId, assistantId);
+        setStreaming(modelId, false);
+        abortRef.current = null;
+      }
+    },
+  });
+
+  function send(text: string, attachments: UiAttachment[]) {
+    sendMutation.mutate({ text, attachments });
   }
 
   return (
