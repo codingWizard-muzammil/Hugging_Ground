@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { HelpModal } from "@/components/HelpModal";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { IconChevronDown, IconKey, IconTrash } from "@/components/icons";
+import { IconChevronDown, IconHelpCircle, IconKey, IconTrash } from "@/components/icons";
 import { useApiKey } from "@/context/api-key-context";
 
 function maskKey(key: string) {
@@ -100,13 +101,24 @@ function KeyMenu() {
 }
 
 export function Header() {
+  const [helpOpen, setHelpOpen] = useState(false);
+
   return (
     <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-border bg-bg/80 px-4 backdrop-blur-md sm:px-6">
       <Logo size={26} />
       <div className="flex items-center gap-2">
+        <button
+          onClick={() => setHelpOpen(true)}
+          aria-label="How Hugging Ground works"
+          title="How Hugging Ground works"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-fg-muted transition-colors hover:bg-bg-inset hover:text-fg"
+        >
+          <IconHelpCircle width={17} height={17} />
+        </button>
         <KeyMenu />
         <ThemeToggle />
       </div>
+      <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
     </header>
   );
 }

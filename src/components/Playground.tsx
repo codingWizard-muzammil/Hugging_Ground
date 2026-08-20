@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { ChatView } from "@/components/chat/ChatView";
+import { HelpModal } from "@/components/HelpModal";
 import { ModelPicker } from "@/components/ModelPicker";
 import { TaskView } from "@/components/task/TaskView";
-import { IconAlertTriangle, IconSparkles } from "@/components/icons";
+import { IconAlertTriangle, IconHelpCircle, IconSparkles } from "@/components/icons";
 import type { HubModelSummary } from "@/lib/hf/hub";
 import { CHAT_PIPELINE_TAGS, pipelineTagLabel, taskForPipelineTag } from "@/lib/hf/tasks";
 import { pushRecentModel } from "@/lib/storage";
@@ -50,9 +51,17 @@ export function Playground() {
   );
 }
 
+const QUICK_STEPS = [
+  "Search or paste any model id from the Hugging Face Hub",
+  "We detect what it does automatically — chat, images, audio, and more",
+  "Type, attach a file, and hit run — responses stream live",
+];
+
 function PickAModel() {
+  const [helpOpen, setHelpOpen] = useState(false);
+
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-16 text-center">
+    <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-16 text-center">
       <div className="hg-gradient-ring flex h-12 w-12 items-center justify-center rounded-2xl text-white">
         <IconSparkles width={22} height={22} />
       </div>
@@ -63,6 +72,26 @@ function PickAModel() {
           models to try chat, image generation, speech, and more.
         </p>
       </div>
+
+      <ol className="flex w-full max-w-sm flex-col gap-2.5 text-left">
+        {QUICK_STEPS.map((step, i) => (
+          <li key={step} className="flex items-start gap-2.5 text-xs text-fg-muted">
+            <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-bg-inset text-[10px] font-semibold text-fg-subtle">
+              {i + 1}
+            </span>
+            {step}
+          </li>
+        ))}
+      </ol>
+
+      <button
+        onClick={() => setHelpOpen(true)}
+        className="flex items-center gap-1.5 text-xs font-medium text-fg-muted hover:text-fg"
+      >
+        <IconHelpCircle width={14} height={14} />
+        How Hugging Ground works
+      </button>
+      <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
 }

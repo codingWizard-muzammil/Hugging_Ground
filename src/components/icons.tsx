@@ -207,6 +207,26 @@ export function IconEye(props: IconProps) {
   );
 }
 
+export function IconHelpCircle(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.5 9.2C9.5 7.5 10.6 6.5 12 6.5C13.4 6.5 14.5 7.4 14.5 8.7C14.5 10.7 12 10.5 12 13" />
+      <circle cx="12" cy="16.3" r="0.5" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function IconWand(props: IconProps) {
+  return (
+    <svg {...base(props)}>
+      <path d="M4 20L15 9" />
+      <path d="M13 3L13.6 5.4L16 6L13.6 6.6L13 9L12.4 6.6L10 6L12.4 5.4L13 3Z" />
+      <path d="M19 12L19.5 13.7L21.2 14.2L19.5 14.7L19 16.4L18.5 14.7L16.8 14.2L18.5 13.7L19 12Z" />
+    </svg>
+  );
+}
+
 export function IconEyeOff(props: IconProps) {
   return (
     <svg {...base(props)}>
