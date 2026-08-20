@@ -5,6 +5,13 @@ entirely in your browser. Paste your own HF API key, search or pick any
 model on the Hub, and start playing — no account, no signup, nothing
 stored anywhere but your own browser's local storage.
 
+**Live demo:** [hugging-ground.netlify.app](https://hugging-ground.netlify.app/)
+
+Since the app is 100% client-side with no backend or server-side secrets
+to protect, it deploys as a static site — Netlify just builds and serves
+the Next.js output directly, and every model request from that deployment
+still goes straight from your browser to Hugging Face.
+
 ## Features
 
 - **Bring your own key, nothing else.** No auth flow, no backend — your
