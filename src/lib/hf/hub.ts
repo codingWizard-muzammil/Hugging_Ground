@@ -6,6 +6,8 @@ export interface HubModelSummary {
   gated: boolean | string;
   tags: string[];
   library: string | null;
+  providers: string[];
+  available: boolean;
 }
 
 interface RawHubModel {
@@ -16,35 +18,31 @@ interface RawHubModel {
   gated?: boolean | string;
   tags?: string[];
   library_name?: string | null;
+  inferenceProviderMapping?:
+    | Record<string, { provider?: string; status?: string; task?: string }>
+    | { provider?: string; status?: string; task?: string }[];
 }
 
 function normalize(raw: RawHubModel): HubModelSummary {
+  const mappings = Array.isArray(raw.inferenceProviderMapping)
+    ? raw.inferenceProviderMapping.map((mapping) => [mapping.provider ?? "", mapping] as const)
+    : Object.entries(raw.inferenceProviderMapping ?? {});
+  const liveMappings = mappings.filter(
+    ([provider, mapping]) => Boolean(provider) && mapping.status === "live",
+  );
+  const providers = liveMappings.map(([provider]) => provider);
   return {
     id: raw.id,
-    pipelineTag: raw.pipeline_tag ?? null,
+    pipelineTag: raw.pipeline_tag ?? liveMappings[0]?.[1].task ?? null,
     likes: raw.likes ?? 0,
     downloads: raw.downloads ?? 0,
     gated: raw.gated ?? false,
     tags: raw.tags ?? [],
     library: raw.library_name ?? null,
+    providers,
+    available: providers.length > 0,
   };
 }
-
-/** A curated starting point so the picker isn't empty before the user searches. */
-export const FEATURED_MODELS: { id: string; category: string }[] = [
-  { id: "meta-llama/Llama-3.1-8B-Instruct", category: "Chat" },
-  { id: "deepseek-ai/DeepSeek-V3.1", category: "Chat" },
-  { id: "Qwen/Qwen2.5-VL-7B-Instruct", category: "Vision chat" },
-  { id: "black-forest-labs/FLUX.1-dev", category: "Image generation" },
-  { id: "stabilityai/stable-diffusion-xl-base-1.0", category: "Image generation" },
-  { id: "openai/whisper-large-v3", category: "Speech to text" },
-  { id: "facebook/detr-resnet-50", category: "Object detection" },
-  { id: "google/vit-base-patch16-224", category: "Image classification" },
-  { id: "facebook/bart-large-cnn", category: "Summarization" },
-  { id: "distilbert-base-uncased-finetuned-sst-2-english", category: "Text classification" },
-  { id: "sentence-transformers/all-MiniLM-L6-v2", category: "Embeddings" },
-  { id: "facebook/bart-large-mnli", category: "Zero-shot classification" },
-];
 
 export async function searchModels(
   query: string,
@@ -54,7 +52,9 @@ export async function searchModels(
     limit: String(opts.limit ?? 20),
     sort: "downloads",
     direction: "-1",
+    inference_provider: "all",
   });
+  params.append("expand[]", "inferenceProviderMapping");
   if (query.trim()) params.set("search", query.trim());
 
   const res = await fetch(`https://huggingface.co/api/models?${params}`, {
@@ -62,7 +62,7 @@ export async function searchModels(
   });
   if (!res.ok) throw new Error(`Model search failed (${res.status})`);
   const data = (await res.json()) as RawHubModel[];
-  return data.map(normalize);
+  return data.map(normalize).filter((model) => model.available);
 }
 
 export async function getModelInfo(
@@ -70,7 +70,7 @@ export async function getModelInfo(
   signal?: AbortSignal
 ): Promise<HubModelSummary> {
   const res = await fetch(
-    `https://huggingface.co/api/models/${modelId}`,
+    `https://huggingface.co/api/models/${modelId}?expand[]=inferenceProviderMapping`,
     { signal }
   );
   if (!res.ok) {
@@ -81,5 +81,9 @@ export async function getModelInfo(
     );
   }
   const data = (await res.json()) as RawHubModel;
-  return normalize(data);
+  const model = normalize(data);
+  if (!model.available) {
+    throw new Error(`"${modelId}" has no live Hugging Face Inference Provider right now.`);
+  }
+  return model;
 }

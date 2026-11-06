@@ -3,13 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
-  FEATURED_MODELS,
   getModelInfo,
   searchModels,
   type HubModelSummary,
 } from "@/lib/hf/hub";
 import { pipelineTagLabel } from "@/lib/hf/tasks";
-import { useRecentModelsStore } from "@/stores/recent-models-store";
 import { cn, formatCompactNumber } from "@/lib/utils";
 import { IconChevronDown, IconLoader, IconSearch } from "@/components/icons";
 
@@ -31,7 +29,6 @@ export function ModelPicker({
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const recent = useRecentModelsStore((state) => state.recentModels);
   const ref = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -97,9 +94,9 @@ export function ModelPicker({
         onClick={toggleOpen}
         className="flex h-10 w-full min-w-0 items-center gap-2 rounded-lg border border-border bg-bg-elevated px-3 text-sm hover:border-border-strong sm:w-auto sm:min-w-70"
       >
-        <span className="hg-gradient-ring h-2 w-2 shrink-0 rounded-full" />
+        <span className="bg-accent-solid h-2 w-2 shrink-0 rounded-full" />
         <span className="min-w-0 flex-1 truncate text-left font-medium">
-          {value ?? "Select a model…"}
+          {value ?? "Select an available model…"}
         </span>
         <IconChevronDown width={15} height={15} className="shrink-0 text-fg-subtle" />
       </button>
@@ -115,7 +112,7 @@ export function ModelPicker({
               onKeyDown={(e) => {
                 if (e.key === "Enter" && query.trim() && !exactMatch) pickById(query);
               }}
-              placeholder="Search any model on the Hub, or paste an id…"
+              placeholder="Search available models or paste a model id…"
               className="w-full rounded-lg bg-transparent py-2 pl-7 pr-2 text-sm outline-none placeholder:text-fg-subtle"
             />
           </div>
@@ -124,7 +121,7 @@ export function ModelPicker({
             {loading && (
               <div className="flex items-center gap-2 px-3 py-3 text-xs text-fg-subtle">
                 <IconLoader width={14} height={14} />
-                Searching the Hub…
+                Finding available models…
               </div>
             )}
 
@@ -142,34 +139,23 @@ export function ModelPicker({
               </button>
             )}
 
-            {!loading && !error && showFeatured && recent.length > 0 && (
-              <ModelGroup label="Recent">
-                {recent.map((id) => (
-                  <button
-                    key={id}
-                    onClick={() => pickById(id)}
-                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-bg-inset"
-                  >
-                    <span className="truncate font-mono text-xs">{id}</span>
-                  </button>
-                ))}
-              </ModelGroup>
-            )}
-
             {!loading && !error && showFeatured && (
-              <ModelGroup label="Featured">
-                {FEATURED_MODELS.map((m) => (
+              <ModelGroup label="Available now">
+                {results.map((model) => (
                   <button
-                    key={m.id}
-                    onClick={() => pickById(m.id)}
+                    key={model.id}
+                    onClick={() => pick(model)}
                     className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-bg-inset"
                   >
-                    <span className="truncate font-mono text-xs">{m.id}</span>
+                    <span className="min-w-0 truncate font-mono text-xs">{model.id}</span>
                     <span className="shrink-0 rounded-full bg-bg-inset px-2 py-0.5 text-[10px] text-fg-muted">
-                      {m.category}
+                      {model.pipelineTag ? pipelineTagLabel(model.pipelineTag) : "Model"}
                     </span>
                   </button>
                 ))}
+                {results.length === 0 && (
+                  <p className="px-3 py-4 text-center text-xs text-fg-subtle">No available models found.</p>
+                )}
               </ModelGroup>
             )}
 
