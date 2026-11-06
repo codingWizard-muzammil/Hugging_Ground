@@ -19,6 +19,13 @@ export const useThemeStore = create<ThemeState>()(
       },
       toggleTheme: () => get().setTheme(get().theme === "dark" ? "light" : "dark"),
     }),
-    { name: "hg:theme" }
+    {
+      name: "hg:theme",
+      onRehydrateStorage: () => (state) => {
+        if (state && typeof document !== "undefined") {
+          document.documentElement.classList.toggle("dark", state.theme === "dark");
+        }
+      },
+    }
   )
 );

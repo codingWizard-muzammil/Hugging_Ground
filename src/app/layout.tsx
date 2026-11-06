@@ -22,9 +22,12 @@ export const metadata: Metadata = {
 const THEME_INIT_SCRIPT = `
 try {
   var stored = JSON.parse(localStorage.getItem("hg:theme"));
-  var isDark = stored ? stored.state.theme === "dark" : true;
+  var theme = stored && stored.state && stored.state.theme;
+  var isDark = theme !== "light";
   document.documentElement.classList.toggle("dark", isDark);
-} catch (e) {}
+} catch (e) {
+  document.documentElement.classList.add("dark");
+}
 `;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
