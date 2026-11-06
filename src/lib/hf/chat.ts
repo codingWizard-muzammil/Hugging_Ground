@@ -51,7 +51,7 @@ export async function* streamChatCompletion(
     .filter((m) => !m.pending)
     .map((m) => ({ role: m.role, content: buildContent(m) }));
   if (options.systemPrompt?.trim()) {
-    messages.unshift({ role: "system", content: options.systemPrompt.trim() });
+    messages.unshift({ role: "assistant", content: options.systemPrompt.trim() });
   }
 
   const stream = client.chatCompletionStream(
