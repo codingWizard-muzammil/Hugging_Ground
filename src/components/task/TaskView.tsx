@@ -98,14 +98,42 @@ export function TaskView({ modelId, task }: { modelId: string; task: TaskDef }) 
     task.inputKind === "text-labels";
 
   return (
-    <div className="hg-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6">
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-5">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="hg-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
         <div>
-          <span className="hg-gradient-text text-xs font-semibold uppercase tracking-wide">{task.label}</span>
-          <p className="mt-1 text-sm text-fg-muted">{task.hint}</p>
+          {!result && !error ? (
+            <div className="flex min-h-64 flex-col items-center justify-center gap-3 py-10 text-center">
+              <div className="bg-accent-solid flex h-12 w-12 items-center justify-center rounded-2xl text-white">
+                <IconSparkles width={22} height={22} />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold">{task.label}</h2>
+                <p className="mt-1 max-w-md text-sm text-fg-muted">{task.hint}</p>
+              </div>
+            </div>
+          ) : (
+            <span className="text-accent-solid text-xs font-semibold uppercase tracking-wide">{task.label}</span>
+          )}
         </div>
 
-        <div className="flex flex-col gap-4 rounded-2xl border border-border bg-bg-elevated p-4">
+        {error && (
+          <div className="flex items-center gap-2 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+            <IconAlertTriangle width={16} height={16} />
+            {error}
+          </div>
+        )}
+        {result && (
+          <div className="rounded-2xl border border-border bg-bg-elevated p-4 hg-animate-in">
+            <OutputPanel result={result} />
+          </div>
+        )}
+        </div>
+      </div>
+
+      <div className="border-t border-border px-4 py-3 sm:px-6">
+        <div className="mx-auto w-full max-w-3xl rounded-2xl border border-border bg-bg-elevated p-3 shadow-sm">
+        <div className="flex flex-col gap-4">
           {needsImage && (
             <FileDropzone kind="image" file={image} onChange={setImage} optional={needsOptionalImage} />
           )}
@@ -166,7 +194,7 @@ export function TaskView({ modelId, task }: { modelId: string; task: TaskDef }) 
               "flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium text-white transition-opacity",
               !input || loading || !client
                 ? "cursor-not-allowed bg-bg-inset text-fg-subtle"
-                : "hg-gradient-ring hover:opacity-90"
+                : "bg-accent-solid hover:opacity-90"
             )}
           >
             {loading ? (
@@ -177,24 +205,12 @@ export function TaskView({ modelId, task }: { modelId: string; task: TaskDef }) 
             ) : (
               <>
                 <IconSparkles width={15} height={15} />
-                Run
+                Send
               </>
             )}
           </button>
         </div>
-
-        {error && (
-          <div className="flex items-center gap-2 rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
-            <IconAlertTriangle width={16} height={16} />
-            {error}
-          </div>
-        )}
-
-        {result && (
-          <div className="rounded-2xl border border-border bg-bg-elevated p-4 hg-animate-in">
-            <OutputPanel result={result} />
-          </div>
-        )}
+      </div>
       </div>
     </div>
   );

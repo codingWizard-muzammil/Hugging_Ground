@@ -45,14 +45,22 @@ export async function* streamChatCompletion(
   client: InferenceClient,
   model: string,
   history: ChatMessage[],
-  options: { signal?: AbortSignal } = {}
+  options: { signal?: AbortSignal; systemPrompt?: string; temperature?: number; maxTokens?: number } = {}
 ): AsyncGenerator<string> {
   const messages = history
     .filter((m) => !m.pending)
     .map((m) => ({ role: m.role, content: buildContent(m) }));
+  if (options.systemPrompt?.trim()) {
+    messages.unshift({ role: "system", content: options.systemPrompt.trim() });
+  }
 
   const stream = client.chatCompletionStream(
-    { model, messages, max_tokens: 2048 },
+    {
+      model,
+      messages,
+      max_tokens: options.maxTokens ?? 1024,
+      temperature: options.temperature ?? 0.7,
+    },
     { signal: options.signal }
   );
 

@@ -11,6 +11,7 @@ import { streamChatCompletion, type ChatMessage } from "@/lib/hf/chat";
 import { useApiKeyStore } from "@/stores/api-key-store";
 import { EMPTY_MESSAGES, useChatStore } from "@/stores/chat-store";
 import { useUsageStore } from "@/stores/usage-store";
+import { getChatSettings, useChatSettingsStore } from "@/stores/chat-settings-store";
 import { uid } from "@/lib/utils";
 
 const SUGGESTIONS = [
@@ -38,6 +39,9 @@ export function ChatView({
   const finishAssistant = useChatStore((state) => state.finishAssistant);
   const setStreaming = useChatStore((state) => state.setStreaming);
   const clearChat = useChatStore((state) => state.clearChat);
+  const savedSettings = useChatSettingsStore((state) => state.byModel[modelId]);
+  const updateSettings = useChatSettingsStore((state) => state.update);
+  const settings = getChatSettings(savedSettings);
   const abortRef = useRef<AbortController | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -78,6 +82,9 @@ export function ChatView({
         recordRequest(apiKey);
         for await (const delta of streamChatCompletion(client, modelId, history, {
           signal: controller.signal,
+          systemPrompt: settings.systemPrompt,
+          temperature: settings.temperature,
+          maxTokens: settings.maxTokens,
         })) {
           appendDelta(modelId, assistantId, delta);
         }
@@ -109,8 +116,51 @@ export function ChatView({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {messages.length > 0 && (
-        <div className="flex justify-end border-b border-border px-4 py-2 sm:px-6">
+      <div className="flex items-center justify-between border-b border-border px-4 py-2 sm:px-6">
+        <details className="group relative">
+          <summary className="cursor-pointer list-none rounded-lg px-2.5 py-1.5 text-xs font-medium text-fg-muted hover:bg-bg-inset hover:text-fg">
+            Customize chat
+          </summary>
+          <div className="absolute left-0 z-20 mt-2 grid w-[min(88vw,22rem)] gap-3 rounded-xl border border-border bg-bg-elevated p-4 shadow-lg">
+            <label className="grid gap-1.5 text-xs font-medium text-fg-muted">
+              System instructions
+              <textarea
+                value={settings.systemPrompt}
+                onChange={(event) => updateSettings(modelId, { systemPrompt: event.target.value })}
+                rows={3}
+                placeholder="Tell the model how you want it to respond…"
+                className="hg-scrollbar resize-y rounded-lg border border-border bg-bg px-3 py-2 text-sm font-normal text-fg outline-none placeholder:text-fg-subtle focus:border-ring"
+              />
+            </label>
+            <label className="grid gap-1.5 text-xs font-medium text-fg-muted">
+              Creativity <span className="font-mono text-fg">{settings.temperature.toFixed(1)}</span>
+              <input
+                type="range"
+                min="0"
+                max="2"
+                step="0.1"
+                value={settings.temperature}
+                onChange={(event) => updateSettings(modelId, { temperature: Number(event.target.value) })}
+                className="w-full accent-[var(--accent-solid)]"
+              />
+            </label>
+            <label className="grid gap-1.5 text-xs font-medium text-fg-muted">
+              Response length
+              <select
+                value={settings.maxTokens}
+                onChange={(event) => updateSettings(modelId, { maxTokens: Number(event.target.value) })}
+                className="rounded-lg border border-border bg-bg px-3 py-2 text-sm text-fg outline-none focus:border-ring"
+              >
+                <option value={512}>Short · 512 tokens</option>
+                <option value={1024}>Balanced · 1,024 tokens</option>
+                <option value={2048}>Long · 2,048 tokens</option>
+                <option value={4096}>Very long · 4,096 tokens</option>
+              </select>
+            </label>
+            <p className="text-[11px] leading-relaxed text-fg-subtle">Settings are saved for this model in this browser.</p>
+          </div>
+        </details>
+        {messages.length > 0 && (
           <button
             onClick={newChat}
             className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-fg-muted transition-colors hover:bg-bg-inset hover:text-fg"
@@ -118,8 +168,8 @@ export function ChatView({
             <IconPlus width={14} height={14} />
             New chat
           </button>
-        </div>
-      )}
+        )}
+      </div>
       <div className="hg-scrollbar flex-1 overflow-y-auto px-4 py-6 sm:px-6">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
           {messages.length === 0 ? (
@@ -166,7 +216,7 @@ function EmptyState({
 }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-6 py-16 text-center">
-      <div className="hg-gradient-ring flex h-12 w-12 items-center justify-center rounded-2xl text-white">
+      <div className="bg-accent-solid flex h-12 w-12 items-center justify-center rounded-2xl text-white">
         <IconSparkles width={22} height={22} />
       </div>
       <div>
