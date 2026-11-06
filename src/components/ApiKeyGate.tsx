@@ -31,7 +31,7 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
           <Logo size={44} showWordmark={false} />
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              Welcome to <span className="hg-gradient-text">Hugging Ground</span>
+              Welcome to <span className="text-accent-solid">Hugging Ground</span>
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-fg-muted">
               Paste your Hugging Face API key to start playing with any model on
@@ -82,7 +82,7 @@ export function ApiKeyGate({ children }: { children: React.ReactNode }) {
             disabled={!draft.trim()}
             className={cn(
               "mt-4 flex w-full items-center justify-center rounded-lg py-2.5 text-sm font-medium text-white transition-opacity",
-              draft.trim() ? "hg-gradient-ring hover:opacity-90" : "cursor-not-allowed bg-bg-inset text-fg-subtle"
+              draft.trim() ? "bg-accent-solid hover:opacity-90" : "cursor-not-allowed bg-bg-inset text-fg-subtle"
             )}
           >
             Continue to the playground

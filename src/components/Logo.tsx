@@ -8,19 +8,13 @@ export function LogoMark({ size = 28, className }: { size?: number; className?: 
       className={className}
       aria-hidden
     >
-      <defs>
-        <linearGradient id="hg-logo-grad" x1="2" y1="4" x2="30" y2="28" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#ffd21e" />
-          <stop offset="1" stopColor="#ff9d00" />
-        </linearGradient>
-      </defs>
-      <rect width="32" height="32" rx="9" fill="url(#hg-logo-grad)" />
+      <rect width="32" height="32" rx="9" fill="#2563eb" />
       {/* face */}
       <circle cx="16" cy="13" r="8.3" fill="white" fillOpacity="0.95" />
       {/* closed, smiling eyes */}
       <path
         d="M12 11.5Q13.4 9.8 14.8 11.5M17.2 11.5Q18.6 9.8 20 11.5"
-        stroke="url(#hg-logo-grad)"
+        stroke="#2563eb"
         strokeWidth="1.6"
         strokeLinecap="round"
         fill="none"

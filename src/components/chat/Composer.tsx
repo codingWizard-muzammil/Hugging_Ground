@@ -146,7 +146,7 @@ export function Composer({
               "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white transition-opacity",
               disabled || (!text.trim() && attachments.length === 0)
                 ? "cursor-not-allowed bg-bg-inset text-fg-subtle"
-                : "hg-gradient-ring hover:opacity-90"
+                : "bg-accent-solid hover:opacity-90"
             )}
             aria-label="Send message"
           >

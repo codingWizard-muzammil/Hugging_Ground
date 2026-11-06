@@ -49,7 +49,7 @@ function LabelBars({ items }: { items: { label: string; score: number }[] }) {
           </div>
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-bg-inset">
             <div
-              className="hg-gradient-ring h-full rounded-full"
+              className="bg-accent-solid h-full rounded-full"
               style={{ width: `${Math.max(2, (item.score / max) * 100)}%` }}
             />
           </div>

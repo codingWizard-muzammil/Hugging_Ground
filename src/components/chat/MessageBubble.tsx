@@ -71,7 +71,7 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
             className={cn(
               "rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
               isUser
-                ? "hg-gradient-ring text-white"
+                ? "bg-bg-inset text-fg"
                 : "border border-border bg-bg-elevated text-fg"
             )}
           >

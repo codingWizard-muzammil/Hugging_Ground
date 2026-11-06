@@ -65,7 +65,7 @@ function PickAModel() {
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-16 text-center">
-      <div className="hg-gradient-ring flex h-12 w-12 items-center justify-center rounded-2xl text-white">
+      <div className="bg-accent-solid flex h-12 w-12 items-center justify-center rounded-2xl text-white">
         <IconSparkles width={22} height={22} />
       </div>
       <div>

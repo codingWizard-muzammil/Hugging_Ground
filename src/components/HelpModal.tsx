@@ -80,7 +80,7 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
           <ol className="flex flex-col gap-4">
             {STEPS.map((step, i) => (
               <li key={step.title} className="flex gap-3">
-                <span className="hg-gradient-ring flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white">
+                <span className="bg-accent-solid flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white">
                   {i + 1}
                 </span>
                 <div>

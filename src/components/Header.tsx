@@ -205,7 +205,7 @@ function KeyMenuPanel({ apiKey }: { apiKey: string }) {
               />
               <button
                 type="submit"
-                className="rounded-md hg-gradient-ring py-1.5 text-xs font-medium text-white hover:opacity-90"
+                className="rounded-md bg-accent-solid py-1.5 text-xs font-medium text-white hover:opacity-90"
               >
                 Save key
               </button>
